@@ -1,0 +1,46 @@
+# InnovaTube - Gitignore raíz
+
+# Dependencias de Node
+node_modules/
+**/node_modules/
+
+# Salidas de build
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+.cache/
+.tmp/
+.eslintcache
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Variables de entorno
+.env
+.env.*
+Front-end/.env
+back-end/.env
+
+# Archivos del sistema/IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Vite/Tailwind cache
+**/.vite
+**/.turbo
+
+# Informes
+*.coverage
+coverage-final.json
