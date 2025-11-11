@@ -9,6 +9,16 @@ interface AuthenticatedRequest extends Request {
   user?: any;
 }
 
+// Tipado de la respuesta de verificación de reCAPTCHA (v2/v3)
+interface RecaptchaVerifyResponse {
+  success?: boolean;
+  score?: number;
+  action?: string;
+  challenge_ts?: string;
+  hostname?: string;
+  'error-codes'?: string[];
+}
+
 // Verificación de reCAPTCHA v2/v3
 async function verifyRecaptchaToken(token: string | undefined): Promise<boolean> {
   const secret = process.env.RECAPTCHA_SECRET_KEY;
@@ -33,7 +43,7 @@ async function verifyRecaptchaToken(token: string | undefined): Promise<boolean>
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString(),
     });
-    const data = await resp.json();
+    const data = await resp.json() as RecaptchaVerifyResponse;
     return !!data.success;
   } catch (err) {
     console.error('Error verificando reCAPTCHA:', err);

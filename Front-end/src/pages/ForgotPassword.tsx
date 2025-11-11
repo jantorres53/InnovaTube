@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/api';
 import ReCAPTCHA from 'react-google-recaptcha';
@@ -9,6 +9,7 @@ const ForgotPassword: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [recaptchaToken, setRecaptchaToken] = useState<string>('');
   const [recaptchaError, setRecaptchaError] = useState<string | null>(null);
+  const recaptchaRef = useRef<any>(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,8 +45,8 @@ const ForgotPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white shadow rounded-lg p-6">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100">
+      <div className="max-w-md w-full bg-white border border-gray-200 shadow-xl rounded-2xl p-6">
         <h1 className="text-xl font-semibold mb-4">Recuperar contraseña</h1>
         <p className="text-sm text-gray-600 mb-4">Ingresa tu correo para recibir un código de verificación.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -56,12 +57,13 @@ const ForgotPassword: React.FC = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              className="mt-1 w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-emerald-500 focus:border-emerald-500"
               placeholder="tu-correo@dominio.com"
             />
           </div>
           <div>
             <ReCAPTCHA
+              ref={recaptchaRef}
               sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
               onChange={(token) => {
                 setRecaptchaToken(token || '');
@@ -71,15 +73,32 @@ const ForgotPassword: React.FC = () => {
                 setRecaptchaToken('');
                 setRecaptchaError('El reCAPTCHA expiró, por favor vuelve a verificar.');
               }}
+              onErrored={() => {
+                setRecaptchaError('No se pudo cargar reCAPTCHA. Verifica tu conexión o bloqueadores.');
+              }}
             />
             {recaptchaError && (
               <p className="mt-2 text-sm text-red-600">{recaptchaError}</p>
             )}
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    recaptchaRef.current?.reset();
+                    setRecaptchaError(null);
+                  } catch (e) {}
+                }}
+                className="text-sm text-emerald-600 hover:text-emerald-700"
+              >
+                Reintentar reCAPTCHA
+              </button>
+            </div>
           </div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg shadow-lg hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50"
           >
             {loading ? 'Enviando...' : 'Enviar código'}
           </button>

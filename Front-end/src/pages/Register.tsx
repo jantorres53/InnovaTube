@@ -16,6 +16,7 @@ const Register: React.FC = () => {
   });
   const [recaptchaToken, setRecaptchaToken] = useState<string>('');
   const recaptchaRef = useRef<any>(null);
+  const [recaptchaError, setRecaptchaError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string>('');
   const [passwordStrength, setPasswordStrength] = useState<{ score: number; label: string }>({ score: 0, label: 'Muy débil' });
   const [passwordChecks, setPasswordChecks] = useState<{ length: boolean; upper: boolean; lower: boolean; number: boolean; special: boolean }>({
@@ -51,10 +52,12 @@ const Register: React.FC = () => {
 
   const handleRecaptchaChange = (token: string | null) => {
     setRecaptchaToken(token || '');
+    setRecaptchaError(null);
   };
 
   const handleRecaptchaExpired = () => {
     setRecaptchaToken('');
+    setRecaptchaError('El reCAPTCHA expiró, por favor vuelve a verificar.');
   };
 
   const validateForm = () => {
@@ -131,16 +134,16 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4 py-12 relative">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 relative bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100">
       {state.loading && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30">
           <Loader />
         </div>
       )}
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 bg-blue-600 rounded-full flex items-center justify-center">
-            <UserPlus className="h-6 w-6 text-white" />
+          <div className="mx-auto h-12 w-12 bg-white rounded-full border border-gray-200 shadow-sm flex items-center justify-center">
+            <UserPlus className="h-6 w-6 text-black" />
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Crea tu cuenta
@@ -150,7 +153,7 @@ const Register: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-white rounded-2xl shadow-xl p-8 border border-gray-200">
           <form className="space-y-4" onSubmit={handleSubmit}>
             {state.error && (
               <div className="bg-red-50 border border-red-200 rounded-md p-4">
@@ -165,14 +168,14 @@ const Register: React.FC = () => {
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
+                    <User className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                   </div>
                   <input
                     id="firstName"
                     name="firstName"
                     type="text"
                     required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-sm"
                     placeholder="Nombre"
                     value={formData.firstName}
                     onChange={handleChange}
@@ -186,14 +189,14 @@ const Register: React.FC = () => {
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-4 w-4 text-gray-400" />
+                    <User className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                   </div>
                   <input
                     id="lastName"
                     name="lastName"
                     type="text"
                     required
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 text-sm"
                     placeholder="Apellido"
                     value={formData.lastName}
                     onChange={handleChange}
@@ -208,14 +211,14 @@ const Register: React.FC = () => {
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-gray-400" />
+                  <User className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                 </div>
                 <input
                   id="username"
                   name="username"
                   type="text"
                   required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                   placeholder="Nombre de usuario"
                   value={formData.username}
                   onChange={handleChange}
@@ -229,14 +232,14 @@ const Register: React.FC = () => {
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-gray-400" />
+                  <Mail className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                 </div>
                 <input
                   id="email"
                   name="email"
                   type="email"
                   required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                   placeholder="correo@ejemplo.com"
                   value={formData.email}
                   onChange={handleChange}
@@ -250,14 +253,14 @@ const Register: React.FC = () => {
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                 </div>
                 <input
                   id="password"
                   name="password"
                   type="password"
                   required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                   placeholder="Mínimo 8 caracteres"
                   value={formData.password}
                   onChange={handleChange}
@@ -348,14 +351,14 @@ const Register: React.FC = () => {
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-gray-400" />
+                  <Lock className="h-6 w-6 text-black bg-white rounded-full p-0.5 shadow-sm" />
                 </div>
                 <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
                   required
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="block w-full pl-12 pr-3 py-3 border border-gray-200 rounded-md focus:outline-none focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm"
                   placeholder="Repite tu contraseña"
                   value={formData.confirmPassword}
                   onChange={handleChange}
@@ -372,13 +375,33 @@ const Register: React.FC = () => {
                 sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
                 onChange={handleRecaptchaChange}
                 onExpired={handleRecaptchaExpired}
+                onErrored={() => {
+                  setRecaptchaError('No se pudo cargar reCAPTCHA. Verifica tu conexión o bloqueadores.');
+                }}
               />
+              {recaptchaError && (
+                <p className="mt-2 text-sm text-red-600 text-center">{recaptchaError}</p>
+              )}
+              <div className="mt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      recaptchaRef.current?.reset();
+                      setRecaptchaError(null);
+                    } catch (e) {}
+                  }}
+                  className="text-sm text-emerald-600 hover:text-emerald-700"
+                >
+                  Reintentar reCAPTCHA
+                </button>
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={state.loading}
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] transition-all duration-200"
             >
               {state.loading ? 'Creando cuenta...' : 'Crear Cuenta'}
             </button>
@@ -389,7 +412,7 @@ const Register: React.FC = () => {
               ¿Ya tienes una cuenta?{' '}
               <Link
                 to="/login"
-                className="font-medium text-blue-600 hover:text-blue-500"
+                className="font-medium text-emerald-600 hover:text-emerald-700"
               >
                 Inicia sesión aquí
               </Link>

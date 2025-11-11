@@ -88,16 +88,16 @@ const ResetPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white border border-gray-200 shadow-sm rounded-xl p-6">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-emerald-100 via-teal-50 to-green-100">
+      <div className="max-w-md w-full bg-white border border-gray-200 shadow-xl rounded-2xl p-6">
         <div className="flex items-center gap-3 mb-4">
-          <ShieldCheck className="h-6 w-6 text-blue-600" />
+          <ShieldCheck className="h-6 w-6 text-black" />
           <h1 className="text-xl font-semibold text-gray-900">Restablecer contraseña</h1>
         </div>
 
         {email ? (
-          <div className="flex items-center gap-2 text-sm text-gray-700 mb-4 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2">
-            <Mail className="h-4 w-4 text-gray-500" />
+          <div className="flex items-center gap-2 text-sm text-gray-700 mb-4 bg-white border border-gray-200 rounded-lg px-3 py-2">
+            <Mail className="h-4 w-4 text-black" />
             <span>Cuenta: <span className="font-medium">{maskEmail(email)}</span></span>
           </div>
         ) : (
@@ -125,7 +125,7 @@ const ResetPassword: React.FC = () => {
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/[^0-9]/g, ''))}
               required
-              className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600"
+              className="mt-1 w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600"
               placeholder="Ingresa los 6 dígitos"
             />
             <button
@@ -138,9 +138,9 @@ const ResetPassword: React.FC = () => {
             </button>
           </div>
           {isVerified ? (
-            <div className="flex items-center gap-2 text-xs text-green-700"><CheckCircle className="h-4 w-4" /> Código verificado</div>
+            <div className="flex items-center gap-2 text-xs text-green-700"><CheckCircle className="h-4 w-4 text-black" /> Código verificado</div>
           ) : (
-            <div className="flex items-center gap-2 text-xs text-gray-600"><KeyRound className="h-4 w-4" /> Ingresa y verifica el código enviado</div>
+            <div className="flex items-center gap-2 text-xs text-gray-600"><KeyRound className="h-4 w-4 text-black" /> Ingresa y verifica el código enviado</div>
           )}
         </div>
 
@@ -155,14 +155,14 @@ const ResetPassword: React.FC = () => {
               required
               minLength={8}
               disabled={!isVerified}
-              className={`mt-1 w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 ${!isVerified ? 'opacity-60 cursor-not-allowed' : ''}`}
+              className={`mt-1 w-full border border-gray-200 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-600 focus:border-emerald-600 ${!isVerified ? 'opacity-60 cursor-not-allowed' : ''}`}
               placeholder="Mínimo 8 caracteres"
             />
           </div>
           <button
             type="submit"
             disabled={loading || !isVerified}
-            className="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white py-3 rounded-lg shadow-lg hover:from-emerald-600 hover:to-teal-700 disabled:opacity-50"
           >
             {loading ? 'Guardando…' : 'Guardar nueva contraseña'}
           </button>
@@ -171,9 +171,9 @@ const ResetPassword: React.FC = () => {
         {status && (
           <div className={`mt-4 text-sm flex items-center gap-2 ${status.toLowerCase().includes('error') || status.toLowerCase().includes('inválido') ? 'text-red-700' : 'text-gray-800'}`}>
             {status.toLowerCase().includes('error') || status.toLowerCase().includes('inválido') ? (
-              <XCircle className="h-4 w-4" />
+              <XCircle className="h-4 w-4 text-black" />
             ) : (
-              <CheckCircle className="h-4 w-4" />
+              <CheckCircle className="h-4 w-4 text-black" />
             )}
             <span>{status}</span>
           </div>
