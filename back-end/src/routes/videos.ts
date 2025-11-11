@@ -6,6 +6,7 @@ const router = express.Router();
 
 // Rutas de videos (públicas)
 router.get('/search', VideoController.searchVideos);
+router.get('/suggestions', VideoController.suggestions);
 
 // Rutas de favoritos (protegidas)
 router.get('/favorites', authenticate, VideoController.getFavorites);

@@ -75,4 +75,28 @@ export class YouTubeService {
       throw new Error('Error al obtener detalles del video');
     }
   }
+
+  // Obtener sugerencias de búsqueda relacionadas desde el endpoint público de Google
+  static async getSuggestions(query: string, maxResults: number = 8): Promise<string[]> {
+    if (!query || !query.trim()) return [];
+    try {
+      const response = await axios.get('https://suggestqueries.google.com/complete/search', {
+        params: {
+          client: 'firefox', // Devuelve JSON simple
+          ds: 'yt',          // Dataset de YouTube
+          q: query,
+        },
+        timeout: 6000,
+      });
+      const data = response.data;
+      // Formato esperado: [query, [sugerencia1, sugerencia2, ...]]
+      if (Array.isArray(data) && Array.isArray(data[1])) {
+        return (data[1] as string[]).slice(0, maxResults);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error obteniendo sugerencias de YouTube:', error);
+      return [];
+    }
+  }
 }

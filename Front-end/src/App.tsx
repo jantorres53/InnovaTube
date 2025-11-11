@@ -1,4 +1,5 @@
 import React from 'react';
+import { Toaster } from 'react-hot-toast';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './pages/Login';
@@ -29,6 +30,18 @@ function App() {
     <AuthProvider>
       <Router>
         <div className="App">
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3500,
+              style: {
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, #0f172a, #1f2937)',
+                color: '#f9fafb',
+                boxShadow: '0 10px 25px rgba(0,0,0,0.35)'
+              }
+            }}
+          />
           <GlobalLogoutOverlay />
           <Routes>
             <Route path="/" element={<Navigate to="/login" />} />

@@ -116,12 +116,47 @@ export const videoService = {
       ...(pageToken && { pageToken }),
     });
     const response = await api.get(`/videos/search?${params}`);
-    return response.data;
+    const res = response.data || {};
+    // Backend returns: { success, data: { videos: [...], total } }
+    // Normalize and map to frontend Video shape: { id, title, ... }
+    const rawItems = res?.data?.videos || res?.items || [];
+    const items = Array.isArray(rawItems)
+      ? rawItems.map((v: any) => ({
+          id: v.id ?? v.videoId,
+          title: v.title,
+          description: v.description,
+          thumbnail: v.thumbnail,
+          channelTitle: v.channelTitle,
+          publishedAt: v.publishedAt,
+        }))
+      : [];
+    const pageInfo = res?.data?.total
+      ? { totalResults: res.data.total, resultsPerPage: items.length }
+      : res?.pageInfo || { totalResults: items.length, resultsPerPage: items.length };
+    return {
+      items,
+      pageInfo,
+      nextPageToken: res.nextPageToken,
+      prevPageToken: res.prevPageToken,
+    };
+  },
+
+  async getSuggestions(query: string, maxResults: number = 8) {
+    const params = new URLSearchParams({
+      query,
+      maxResults: String(maxResults),
+    });
+    const response = await api.get(`/videos/suggestions?${params}`);
+    const res = response.data || {};
+    return res?.data?.suggestions || res?.suggestions || [];
   },
 
   async getFavorites() {
     const response = await api.get('/videos/favorites');
-    return response.data;
+    const res = response.data || {};
+    // Normalize favorites array from backend
+    const favorites = res?.data?.favorites || res?.favorites || [];
+    return favorites;
   },
 
   async addToFavorite(videoData: {
@@ -129,6 +164,8 @@ export const videoService = {
     title: string;
     thumbnail: string;
     channelTitle: string;
+    description?: string;
+    publishedAt?: string;
   }) {
     const response = await api.post('/videos/favorites', videoData);
     return response.data;

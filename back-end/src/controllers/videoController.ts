@@ -38,6 +38,23 @@ export class VideoController {
     }
   }
 
+  static async suggestions(req: Request, res: Response): Promise<void> {
+    try {
+      const { query, maxResults = 8 } = req.query;
+
+      if (!query || typeof query !== 'string') {
+        res.status(400).json({ success: false, message: 'El parámetro de búsqueda es requerido' });
+        return;
+      }
+
+      const suggestions = await YouTubeService.getSuggestions(query, Number(maxResults));
+      res.json({ success: true, data: { suggestions, total: suggestions.length } });
+    } catch (error) {
+      console.error('Error obteniendo sugerencias:', error);
+      res.status(500).json({ success: false, message: 'Error al obtener sugerencias' });
+    }
+  }
+
   static async getFavorites(req: AuthenticatedRequest, res: Response): Promise<void> {
     try {
       if (!req.user) {
