@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { toast } from 'react-hot-toast';
 import Swal from 'sweetalert2';
 import { useAuth } from '../contexts/AuthContext';
 import { videoService } from '../services/api';
 import { Video, Favorite } from '../types';
-import { Search, Heart, LogOut, User, Star, Play, Clock, Eye, X, Menu } from 'lucide-react';
+import { Search, Heart, LogOut, User, Star, Play, Clock, Eye, X, Menu, ListPlus, Trash2, PlayCircle, Edit2, SortAsc, SortDesc } from 'lucide-react';
 import Loader from '../components/Loader';
 
 const Dashboard: React.FC = () => {
@@ -13,7 +13,7 @@ const Dashboard: React.FC = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'search' | 'favorites'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'favorites' | 'playlists'>('search');
   const [searchError, setSearchError] = useState<string | null>(null);
   const [nextPageToken, setNextPageToken] = useState<string | undefined>(undefined);
   const [prevPageToken, setPrevPageToken] = useState<string | undefined>(undefined);
@@ -34,6 +34,48 @@ const Dashboard: React.FC = () => {
   const [recentSearches, setRecentSearches] = useState<{ query: string; at: number }[]>([]);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [favoriteQuery, setFavoriteQuery] = useState('');
+  // Playlists
+  type Playlist = {
+    id: string;
+    name: string;
+    createdAt: number;
+    videos: Video[];
+  };
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [activePlaylistId, setActivePlaylistId] = useState<string | null>(null);
+  const [playlistSearchQuery, setPlaylistSearchQuery] = useState<string>('');
+  const [playlistSort, setPlaylistSort] = useState<'date_desc' | 'date_asc' | 'name_asc' | 'name_desc'>('date_desc');
+
+  // Tabs micro-highlight
+  const tabsNavRef = useRef<HTMLDivElement>(null);
+  const searchTabRef = useRef<HTMLButtonElement>(null);
+  const favoritesTabRef = useRef<HTMLButtonElement>(null);
+  const playlistsTabRef = useRef<HTMLButtonElement>(null);
+  const [tabHighlight, setTabHighlight] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+
+  const updateTabHighlight = () => {
+    const navEl = tabsNavRef.current;
+    if (!navEl) return;
+    const map: Record<string, HTMLButtonElement | null> = {
+      search: searchTabRef.current,
+      favorites: favoritesTabRef.current,
+      playlists: playlistsTabRef.current,
+    };
+    const activeEl = map[activeTab];
+    if (!activeEl) return;
+    const navRect = navEl.getBoundingClientRect();
+    const tabRect = activeEl.getBoundingClientRect();
+    const left = tabRect.left - navRect.left;
+    const width = tabRect.width;
+    setTabHighlight({ left, width });
+  };
+
+  useEffect(() => {
+    updateTabHighlight();
+    const onResize = () => updateTabHighlight();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [activeTab]);
 
   const user = state.user;
 
@@ -122,6 +164,198 @@ const Dashboard: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showSuggestions]);
+
+  // Load playlists from localStorage on mount
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('innovatube_playlists');
+      if (raw) setPlaylists(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const savePlaylists = (pls: Playlist[]) => {
+    setPlaylists(pls);
+    try {
+      localStorage.setItem('innovatube_playlists', JSON.stringify(pls));
+    } catch {}
+  };
+
+  const createPlaylist = async () => {
+    const res = await Swal.fire({
+      title: 'Nueva playlist',
+      input: 'text',
+      inputLabel: 'Nombre de la playlist',
+      inputPlaceholder: 'Mi Playlist',
+      showCancelButton: true,
+      confirmButtonText: 'Crear',
+      cancelButtonText: 'Cancelar',
+      background: 'rgba(241,245,249,0.75)',
+      color: '#0f172a',
+      backdrop: 'rgba(15,23,42,0.12)',
+      width: 480,
+      customClass: {
+        popup: 'rounded-2xl shadow-xl backdrop-blur-xl ring-1 ring-white/60',
+        title: 'text-slate-900',
+        htmlContainer: 'text-slate-700',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-400',
+        cancelButton: 'bg-white/70 text-slate-900 hover:bg-white/90 ring-1 ring-slate-300',
+        input: 'text-slate-900 bg-white/80 border border-slate-300 rounded-md',
+      },
+    });
+    if (!res.isConfirmed || !res.value?.trim()) return;
+    const id = `${Date.now()}`;
+    const newPl: Playlist = { id, name: res.value.trim(), createdAt: Date.now(), videos: [] };
+    const next = [newPl, ...playlists];
+    savePlaylists(next);
+    toast.success('Playlist creada');
+    setActivePlaylistId(id);
+  };
+
+  const addVideoToPlaylist = (playlistId: string, video: Video) => {
+    const next = playlists.map((pl) =>
+      pl.id === playlistId
+        ? { ...pl, videos: pl.videos.some((v) => v.id === video.id) ? pl.videos : [video, ...pl.videos] }
+        : pl
+    );
+    savePlaylists(next);
+    toast.success('Video agregado a la playlist');
+  };
+
+  const promptAddToPlaylist = async (video: Video) => {
+    if (playlists.length === 0) {
+    const res = await Swal.fire({
+      title: 'Crear playlist',
+      text: 'No tienes playlists. Crea una para agregar videos.',
+      showCancelButton: true,
+      confirmButtonText: 'Crear',
+      cancelButtonText: 'Cancelar',
+      background: 'rgba(241,245,249,0.75)',
+      color: '#0f172a',
+      backdrop: 'rgba(15,23,42,0.12)',
+      width: 480,
+      customClass: {
+        popup: 'rounded-2xl shadow-xl backdrop-blur-xl ring-1 ring-white/60',
+        title: 'text-slate-900',
+        htmlContainer: 'text-slate-700',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-400',
+        cancelButton: 'bg-white/70 text-slate-900 hover:bg-white/90 ring-1 ring-slate-300',
+      },
+    });
+      if (res.isConfirmed) {
+        await createPlaylist();
+        if (activePlaylistId) addVideoToPlaylist(activePlaylistId, video);
+      }
+      return;
+    }
+    const inputOptions: Record<string, string> = {};
+    playlists.forEach((pl) => (inputOptions[pl.id] = pl.name));
+    const res = await Swal.fire({
+      title: 'Agregar a playlist',
+      input: 'select',
+      inputOptions,
+      inputPlaceholder: 'Selecciona una playlist',
+      showCancelButton: true,
+      confirmButtonText: 'Agregar',
+      cancelButtonText: 'Cancelar',
+      background: 'rgba(241,245,249,0.75)',
+      color: '#0f172a',
+      backdrop: 'rgba(15,23,42,0.12)',
+      width: 480,
+      customClass: {
+        popup: 'rounded-2xl shadow-xl backdrop-blur-xl ring-1 ring-white/60',
+        title: 'text-slate-900',
+        htmlContainer: 'text-slate-700',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-400',
+        cancelButton: 'bg-white/70 text-slate-900 hover:bg-white/90 ring-1 ring-slate-300',
+        input: 'text-slate-900 bg-white/80 border border-slate-300 rounded-md',
+      },
+    });
+    if (res.isConfirmed && res.value) {
+      addVideoToPlaylist(res.value as string, video);
+    }
+  };
+
+  const removeFromPlaylist = (playlistId: string, videoId: string) => {
+    const next = playlists.map((pl) =>
+      pl.id === playlistId ? { ...pl, videos: pl.videos.filter((v) => v.id !== videoId) } : pl
+    );
+    savePlaylists(next);
+    toast.success('Video eliminado de la playlist');
+  };
+
+  const deletePlaylist = async (playlistId: string) => {
+    const pl = playlists.find((p) => p.id === playlistId);
+    const res = await Swal.fire({
+      title: 'Eliminar playlist',
+      text: `¿Eliminar la playlist "${pl?.name ?? 'sin nombre'}"?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Eliminar',
+      cancelButtonText: 'Cancelar',
+      background: 'rgba(241,245,249,0.75)',
+      color: '#0f172a',
+      backdrop: 'rgba(15,23,42,0.12)',
+      width: 480,
+      confirmButtonColor: '#EF4444',
+      cancelButtonColor: '#6B7280',
+      customClass: {
+        popup: 'rounded-2xl shadow-xl backdrop-blur-xl ring-1 ring-white/60',
+        title: 'text-slate-900',
+        htmlContainer: 'text-slate-700',
+        confirmButton: 'text-white',
+        cancelButton: 'text-slate-900',
+      },
+    });
+    if (!res.isConfirmed) return;
+    const next = playlists.filter((p) => p.id !== playlistId);
+    savePlaylists(next);
+    if (activePlaylistId === playlistId) setActivePlaylistId(null);
+    toast.success('Playlist eliminada');
+  };
+
+  const renamePlaylist = async (playlistId: string) => {
+    const pl = playlists.find((p) => p.id === playlistId);
+    const res = await Swal.fire({
+      title: 'Renombrar playlist',
+      input: 'text',
+      inputValue: pl?.name ?? '',
+      inputLabel: 'Nuevo nombre',
+      showCancelButton: true,
+      confirmButtonText: 'Guardar',
+      cancelButtonText: 'Cancelar',
+      background: 'rgba(241,245,249,0.75)',
+      color: '#0f172a',
+      backdrop: 'rgba(15,23,42,0.12)',
+      width: 480,
+      customClass: {
+        popup: 'rounded-2xl shadow-xl backdrop-blur-xl ring-1 ring-white/60',
+        title: 'text-slate-900',
+        htmlContainer: 'text-slate-700',
+        confirmButton: 'bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-400',
+        cancelButton: 'bg-white/70 text-slate-900 hover:bg-white/90 ring-1 ring-slate-300',
+        input: 'text-slate-900 bg-white/80 border border-slate-300 rounded-md',
+      },
+    });
+    if (!res.isConfirmed || !res.value?.trim()) return;
+    const next = playlists.map((p) => (p.id === playlistId ? { ...p, name: res.value.trim() } : p));
+    savePlaylists(next);
+    toast.success('Playlist renombrada');
+  };
+
+  const sortedPlaylists = useMemo(() => {
+    const copy = [...playlists];
+    switch (playlistSort) {
+      case 'date_asc':
+        return copy.sort((a, b) => a.createdAt - b.createdAt);
+      case 'name_asc':
+        return copy.sort((a, b) => a.name.localeCompare(b.name));
+      case 'name_desc':
+        return copy.sort((a, b) => b.name.localeCompare(a.name));
+      case 'date_desc':
+      default:
+        return copy.sort((a, b) => b.createdAt - a.createdAt);
+    }
+  }, [playlists, playlistSort]);
 
   const performSearch = async (q: string) => {
     if (!q.trim()) return;
@@ -388,11 +622,12 @@ const Dashboard: React.FC = () => {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Tabs */}
-        <div className="border-b border-gray-200 mb-8">
-          <nav className="-mb-px flex space-x-8">
+        <div className="relative border-b border-gray-200 mb-8">
+          <nav ref={tabsNavRef} className="relative -mb-px flex justify-center space-x-8">
             <button
               onClick={() => setActiveTab('search')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              ref={searchTabRef}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'search'
                   ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -403,7 +638,8 @@ const Dashboard: React.FC = () => {
             </button>
             <button
               onClick={() => setActiveTab('favorites')}
-              className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              ref={favoritesTabRef}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'favorites'
                   ? 'border-emerald-500 text-emerald-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -412,12 +648,29 @@ const Dashboard: React.FC = () => {
               <Star className="h-4 w-4 inline mr-2" />
               Mis Favoritos ({favorites.length})
             </button>
+            <button
+              onClick={() => setActiveTab('playlists')}
+              ref={playlistsTabRef}
+              className={`py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'playlists'
+                  ? 'border-emerald-500 text-emerald-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <PlayCircle className="h-4 w-4 inline mr-2" />
+              Mis Playlists ({playlists.length})
+            </button>
           </nav>
+          {/* Micro-highlight under active tab */}
+          <div
+            className="pointer-events-none absolute bottom-0 h-0.5 rounded-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-cyan-400 transition-all duration-300 ease-out"
+            style={{ left: `${tabHighlight.left}px`, width: `${tabHighlight.width}px` }}
+          />
         </div>
 
         {/* Search Tab */}
-        {activeTab === 'search' && (
-          <div>
+{activeTab === 'search' && (
+  <div className="animate-section-enter">
             {/* Search Form */}
             <div className="mb-8">
               <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
@@ -610,6 +863,20 @@ const Dashboard: React.FC = () => {
               </form>
             </div>
 
+            {/* Empty state when no search yet */}
+            {!isSearching && !loading && videos.length === 0 && !searchQuery.trim() && (
+              <div className="max-w-2xl mx-auto text-center py-16">
+                <div className="relative mx-auto h-28 w-28 mb-6">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-400 to-cyan-400 opacity-30 blur-2xl animate-pulse" />
+                  <div className="relative h-full w-full rounded-full bg-white/70 backdrop-blur-xl ring-1 ring-white/60 flex items-center justify-center shadow-xl">
+                    <Search className="h-10 w-10 text-emerald-600" />
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold text-slate-900">Busca videos que te interesen</h3>
+                <p className="text-sm text-slate-600 mt-2">Escribe un tema, artista o canal para comenzar.</p>
+              </div>
+            )}
+
             {/* Loader while searching */}
             {isSearching && (
               <div className="flex justify-center items-center py-12 transition-opacity duration-300">
@@ -699,6 +966,17 @@ const Dashboard: React.FC = () => {
                       >
                         <Heart className={`h-5 w-5 ${isFavorite(video.id) ? 'fill-current' : ''}`} />
                       </button>
+                      {/* Add to playlist button */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          promptAddToPlaylist(video);
+                        }}
+                        className="absolute top-2 right-12 p-2 rounded-full bg-white text-gray-400 hover:text-emerald-600 shadow-lg"
+                        aria-label="Agregar a playlist"
+                      >
+                        <ListPlus className="h-5 w-5" />
+                      </button>
                     </div>
                     <div className="p-4">
                       <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
@@ -758,7 +1036,7 @@ const Dashboard: React.FC = () => {
 
         {/* Favorites Tab */}
         {activeTab === 'favorites' && (
-          <div>
+          <div className="animate-section-enter">
             {favorites.length === 0 ? (
               <div className="text-center py-12">
                 <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -871,6 +1149,190 @@ const Dashboard: React.FC = () => {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {/* Playlists Tab */}
+        {activeTab === 'playlists' && (
+          <div className="animate-section-enter">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Tus Playlists</h2>
+                <p className="text-sm text-gray-500">Organiza y reproduce tus colecciones</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-1">
+                  <label className="text-sm text-gray-600">Ordenar:</label>
+                  <select
+                    value={playlistSort}
+                    onChange={(e) => setPlaylistSort(e.target.value as any)}
+                    className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-800 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition"
+                  >
+                    <option value="date_desc">Fecha (recientes primero)</option>
+                    <option value="date_asc">Fecha (antiguas primero)</option>
+                    <option value="name_asc">Nombre (A-Z)</option>
+                    <option value="name_desc">Nombre (Z-A)</option>
+                  </select>
+                </div>
+                <button
+                  onClick={createPlaylist}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm leading-4 font-medium rounded-md text-gray-800 bg-white hover:bg-gray-50 transition"
+                >
+                  <ListPlus className="h-4 w-4 mr-2" />
+                  Nueva Playlist
+                </button>
+              </div>
+            </div>
+            {playlists.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500">No tienes playlists aún.</p>
+                <p className="text-gray-400 text-sm mt-2">Crea una y agrega tus videos favoritos.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {sortedPlaylists.map((pl) => (
+                  <div key={pl.id} className="bg-white/95 rounded-2xl border border-gray-100 shadow hover:shadow-lg transition-transform duration-200 hover:-translate-y-0.5">
+                    <div className="p-4 flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 tracking-tight">{pl.name}</h3>
+                        <p className="text-xs text-gray-500">{pl.videos.length} videos · {new Date(pl.createdAt).toLocaleDateString()}</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => setActivePlaylistId(pl.id)}
+                          className="px-3 py-1 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                        >
+                          Ver
+                        </button>
+                        <button
+                          onClick={() => renamePlaylist(pl.id)}
+                          className="p-2 rounded-md text-gray-500 hover:text-emerald-600 transition"
+                          aria-label="Renombrar playlist"
+                          title="Renombrar"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => deletePlaylist(pl.id)}
+                          className="p-2 rounded-md text-gray-500 hover:text-red-600 transition"
+                          aria-label="Eliminar playlist"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Playlist detail */}
+            {activePlaylistId && (
+              <div className="mt-8">
+                {(() => {
+                  const pl = playlists.find((p) => p.id === activePlaylistId);
+                  if (!pl) return null;
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Playlist: {pl.name}</h3>
+                          <p className="text-sm text-gray-500">{pl.videos.length} videos</p>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <input
+                            type="text"
+                            value={playlistSearchQuery}
+                            onChange={(e) => setPlaylistSearchQuery(e.target.value)}
+                            placeholder="Buscar videos en esta playlist..."
+                            className="px-3 py-2 text-sm rounded-md border border-gray-300 bg-white text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <button
+                            onClick={() => setActivePlaylistId(null)}
+                            className="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition"
+                          >
+                            Cerrar
+                          </button>
+                        </div>
+                      </div>
+                      {pl.videos.length === 0 ? (
+                        <div className="text-center py-12">
+                          <p className="text-gray-500">Esta playlist está vacía.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {pl.videos
+                            .filter((v) =>
+                              playlistSearchQuery.trim()
+                                ? v.title.toLowerCase().includes(playlistSearchQuery.toLowerCase())
+                                : true
+                            )
+                            .map((video) => (
+                            <div key={video.id} className="bg-white/95 rounded-2xl border border-gray-100 shadow hover:shadow-lg overflow-hidden transition-transform duration-200 hover:-translate-y-0.5">
+                              <div className="relative group cursor-pointer" onClick={() => setPreviewVideo(video)}>
+                                {failedThumbs.includes(video.id) ? (
+                                  <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
+                                    <div className="bg-black bg-opacity-40 rounded-full p-3">
+                                      <Play className="h-6 w-6 text-white" />
+                                    </div>
+                                    <span className="sr-only">Miniatura no disponible</span>
+                                  </div>
+                                ) : (
+                                  <img
+                                    src={video.thumbnail}
+                                    alt={video.title}
+                                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
+                                    loading="lazy"
+                                    decoding="async"
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                    onError={(e) => {
+                                      try {
+                                        const id = video.id;
+                                        const attempt = thumbAttemptsRef.current[id] ?? 0;
+                                        const next = getNextThumb(id, e.currentTarget.src, attempt);
+                                        if (next) {
+                                          thumbAttemptsRef.current[id] = attempt + 1;
+                                          e.currentTarget.src = next;
+                                        } else {
+                                          setFailedThumbs((prev) => (prev.includes(id) ? prev : [...prev, id]));
+                                        }
+                                      } catch {
+                                        setFailedThumbs((prev) => (prev.includes(video.id) ? prev : [...prev, video.id]));
+                                      }
+                                    }}
+                                  />
+                                )}
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="bg-black bg-opacity-40 rounded-full p-3">
+                                    <Play className="h-6 w-6 text-white" />
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    removeFromPlaylist(pl.id, video.id);
+                                  }}
+                                  className="absolute top-2 right-2 px-3 py-1 text-xs rounded-md bg-white text-gray-700 hover:text-red-600 shadow transition"
+                                  title="Quitar de la playlist"
+                                >
+                                  Quitar
+                                </button>
+                              </div>
+                              <div className="p-4">
+                                <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 tracking-tight">{video.title}</h3>
+                                <p className="text-sm text-gray-600">{video.channelTitle}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             )}
           </div>
         )}
