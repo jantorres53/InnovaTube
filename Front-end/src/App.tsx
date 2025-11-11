@@ -6,6 +6,8 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import { useAuth } from './contexts/AuthContext';
 import LogoutOverlay from './components/LogoutOverlay';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { state } = useAuth();
@@ -43,6 +45,22 @@ function App() {
               element={
                 <PublicRoute>
                   <Register />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                <PublicRoute>
+                  <ResetPassword />
                 </PublicRoute>
               }
             />

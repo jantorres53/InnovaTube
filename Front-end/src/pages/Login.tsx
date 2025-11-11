@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import Loader from '../components/Loader';
+import ReCAPTCHA from 'react-google-recaptcha';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -11,6 +12,8 @@ const Login: React.FC = () => {
   });
   const { state, login, clearError } = useAuth();
   const navigate = useNavigate();
+  const [recaptchaToken, setRecaptchaToken] = useState<string>('');
+  const [recaptchaError, setRecaptchaError] = useState<string | null>(null);
 
   useEffect(() => {
     if (state.user) {
@@ -32,7 +35,13 @@ const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(formData.login, formData.password);
+    // Validar reCAPTCHA
+    if (!recaptchaToken) {
+      setRecaptchaError('Por favor, completa el reCAPTCHA antes de continuar.');
+      return;
+    }
+    setRecaptchaError(null);
+    await login(formData.login, formData.password, recaptchaToken);
   };
 
   return (
@@ -112,6 +121,23 @@ const Login: React.FC = () => {
               >
                 ¿Olvidaste tu contraseña?
               </Link>
+            </div>
+
+            <div className="mt-4">
+              <ReCAPTCHA
+                sitekey={import.meta.env.VITE_RECAPTCHA_SITE_KEY}
+                onChange={(token) => {
+                  setRecaptchaToken(token || '');
+                  setRecaptchaError(null);
+                }}
+                onExpired={() => {
+                  setRecaptchaToken('');
+                  setRecaptchaError('El reCAPTCHA expiró, por favor vuelve a verificar.');
+                }}
+              />
+              {recaptchaError && (
+                <p className="mt-2 text-sm text-red-600">{recaptchaError}</p>
+              )}
             </div>
 
             <button

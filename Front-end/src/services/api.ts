@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { AuthResponse, LoginRequest, RegisterRequest } from '../types';
+import { AuthResponse, LoginRequest, RegisterRequest, User } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -39,6 +39,7 @@ export const authService = {
     const response = await api.post('/auth/login', {
       login: data.login,
       password: data.password,
+      recaptchaToken: data.recaptchaToken,
     });
     const res = response.data || {};
     const token = res?.data?.token ?? res?.token;
@@ -89,6 +90,21 @@ export const authService = {
   setAuthData(token: string, user: any): void {
     localStorage.setItem('token', token);
     localStorage.setItem('user', JSON.stringify(user));
+  },
+
+  async requestPasswordReset(email: string, recaptchaToken: string): Promise<{ success: boolean; message?: string }> {
+    const response = await api.post('/auth/request-password-reset', { email, recaptchaToken });
+    return response.data;
+  },
+
+  async verifyResetCode(email: string, code: string): Promise<{ success: boolean; message?: string }> {
+    const response = await api.post('/auth/verify-reset-code', { email, code });
+    return response.data;
+  },
+
+  async resetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; message?: string }> {
+    const response = await api.post('/auth/reset-password', { email, code, newPassword });
+    return response.data;
   },
 };
 

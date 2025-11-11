@@ -121,6 +121,10 @@ YOUTUBE_API_KEY=tu_api_key_youtube
 
 # Clave secreta de reCAPTCHA (se valida en backend)
 RECAPTCHA_SECRET_KEY=tu_secret_key_recaptcha
+
+# SMTP para envío de correos (recuperación de contraseña)
+SMTP_USERNAME=puntodeventaratapro@gmail.com
+SMTP_PASSWORD=tu_app_password_gmail_sin_espacios
 ```
 
 Notas:
@@ -128,6 +132,11 @@ Notas:
 - `MONGODB_URI` se usa en `src/config/database.ts`.
 - `RECAPTCHA_SECRET_KEY` se usa en `src/controllers/authController.ts`.
 - `YOUTUBE_API_KEY` se usa en `src/services/youtubeService.ts`.
+- `SMTP_USERNAME` y `SMTP_PASSWORD` se usan en `src/services/mailService.ts`.
+
+Importante:
+- Para Gmail, usa una Contraseña de Aplicación (no tu contraseña normal). Suele mostrarse con espacios, pero debe colocarse sin espacios en `.env`.
+- Ejemplo: si tu contraseña se ve `ffwj xaui khdq lozc`, escribe `ffwjxauikhdqlozc`.
 
 ## Comandos útiles
 

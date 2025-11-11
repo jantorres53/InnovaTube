@@ -62,7 +62,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
 
 interface AuthContextType {
   state: AuthState;
-  login: (login: string, password: string) => Promise<void>;
+  login: (login: string, password: string, recaptchaToken: string) => Promise<void>;
   register: (userData: any) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
@@ -89,10 +89,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (login: string, password: string) => {
+  const login = async (login: string, password: string, recaptchaToken: string) => {
     try {
       dispatch({ type: 'LOGIN_START' });
-      const response = await authService.login({ login, password });
+      const response = await authService.login({ login, password, recaptchaToken });
       
       if (response.success && response.token && response.user) {
         authService.setAuthData(response.token, response.user);

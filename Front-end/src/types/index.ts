@@ -20,6 +20,7 @@ export interface AuthResponse {
 export interface LoginRequest {
   login: string;
   password: string;
+  recaptchaToken: string;
 }
 
 export interface RegisterRequest {
